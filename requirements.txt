@@ -1,0 +1,20 @@
+# Runtime dependency for the Support Breakdown Report.
+#
+# boto3 is pre-installed in AWS CloudShell, so this file is mainly for running
+# the tool locally:
+#
+#   pip install -r requirements.txt
+#
+# The Enterprise Support billing APIs
+# (get-enterprise-support-contract-details, get-enterprise-support-charge-summary,
+# list-enterprise-support-linked-account-charges) are only available in recent
+# boto3/botocore releases, so always prefer the latest version:
+#
+#   pip install --upgrade boto3
+#
+# If your environment (local or CloudShell) ships an older boto3, the script
+# detects the missing operations and tells you to upgrade.
+#
+# Note: these APIs are present in the 1.43.x line (they are missing in 1.42.x),
+# so 1.43.0 is the practical minimum.
+boto3>=1.43.0
