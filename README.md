@@ -6,13 +6,11 @@
 
 *Read this in another language: [Português](README.pt-BR.md).*
 
-Generate a per-linked-account CSV of AWS Enterprise Support charges. The report
-can cover a single billing month or a look-back window of several months.
+Generate a per-linked-account CSV of AWS Enterprise Support charges. The report can cover a single billing month or a look-back window of several months.
 
 ## How it works
 
-The tool sources all of its data from three AWS Billing APIs and combines them
-into one CSV row per linked account, per billing month:
+The tool sources all of its data from three AWS Billing APIs and combines them into one CSV row per linked account, per billing month:
 
 | API | Provides |
 |-----|----------|
@@ -23,14 +21,19 @@ into one CSV row per linked account, per billing month:
 ## Requirements
 
 - Python 3.10+
-- `boto3 >= 1.43.0` — the Enterprise Support billing APIs are only available in
-  the 1.43.x line and later (they are missing in 1.42.x). The script detects an
-  older SDK and tells you to upgrade instead of failing obscurely.
+- `boto3 >= 1.43.0` — the Enterprise Support billing APIs are only available in the 1.43.x line and later (they are missing in 1.42.x). The script detects an older SDK and tells you to upgrade instead of failing obscurely.
 - AWS credentials with permission to call the Enterprise Support billing APIs.
 
 boto3 is pre-installed in AWS CloudShell, so no setup is needed there.
 
 ## Setup
+
+Clone the repository:
+
+```bash
+git clone https://github.com/aws-samples/sample-support-breakdown-report.git
+cd sample-support-breakdown-report
+```
 
 ### AWS CloudShell
 
@@ -48,13 +51,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Configure credentials with a named profile, environment variables, or any
-method supported by the AWS SDK credential chain.
+Configure credentials with a named profile, environment variables, or any method supported by the AWS SDK credential chain.
 
 ## Usage
 
-Use the interactive console. `console.py` is a small REPL; the `run` command
-generates the report, forwarding any options to it.
+Use the interactive console. `console.py` is a small REPL; the `run` command generates the report, forwarding any options to it.
 
 ```bash
 python console.py
@@ -82,8 +83,7 @@ Pass these to the `run` command:
 
 ## Output format
 
-The CSV uses CRLF line endings. Rows are grouped by payer account and sorted
-ascending by account id within each group.
+The CSV uses CRLF line endings. Rows are grouped by payer account and sorted ascending by account id within each group.
 
 ### Columns
 
@@ -110,39 +110,19 @@ ascending by account id within each group.
 
 ### Charge allocation methods
 
-The `charge_allocation_method` column is written verbatim from the API's
-`supportAllocationMethod` field, which has two valid values:
-`Proportional` and `Fixed_Percentage`. There are two charge behaviours:
+The `charge_allocation_method` column is written verbatim from the API's `supportAllocationMethod` field, which has two valid values: `Proportional` and `Fixed_Percentage`. There are two charge behaviours:
 
-- **Fixed_Percentage** — support charges are distributed across payer accounts
-  according to pre-configured percentages from the contract
-  (`chargedPayerAccountIds[].chargePercentage`). The charge for each charged
-  account is `total_support_charge × chargePercentage`; every other account is
-  `0`.
-- **Proportional** — support charges are distributed to each account in
-  proportion to its prorated eligible spend. In this mode every
-  `chargedPayerAccountIds[].chargePercentage` is `0.0`, so the per-account
-  amount cannot come from the contract and is computed as
-  `total_support_charge × (account_prorated_charges ÷ Σ account_prorated_charges)`.
+- **Fixed_Percentage** — support charges are distributed across payer accounts according to pre-configured percentages from the contract (`chargedPayerAccountIds[].chargePercentage`). The charge for each charged account is `total_support_charge × chargePercentage`; every other account is `0`.
+- **Proportional** — support charges are distributed to each account in proportion to its prorated eligible spend. In this mode every `chargedPayerAccountIds[].chargePercentage` is `0.0`, so the per-account amount cannot come from the contract and is computed as `total_support_charge × (account_prorated_charges ÷ Σ account_prorated_charges)`.
 
-> **Implementation note:** the mode is treated as **Proportional** when either
-> signal indicates it: the contract's `supportAllocationMethod` is
-> `Proportional`, or the contract has charged accounts and **all** of their
-> `chargePercentage` values are `0.0`. In that case the report allocates the
-> total support charge by each account's share of the prorated eligible spend.
-> Otherwise (`Fixed_Percentage`) it uses the contract percentages directly, and
-> when there are no charged accounts at all, per-account charges stay `0`.
+> **Implementation note:** the mode is treated as **Proportional** when either signal indicates it: the contract's `supportAllocationMethod` is `Proportional`, or the contract has charged accounts and **all** of their `chargePercentage` values are `0.0`. In that case the report allocates the total support charge by each account's share of the prorated eligible spend. Otherwise (`Fixed_Percentage`) it uses the contract percentages directly, and when there are no charged accounts at all, per-account charges stay `0`.
 
 ## Troubleshooting
 
-- **"This boto3/botocore version does not support the Enterprise Support billing
-  APIs"** — upgrade the SDK: `pip install --upgrade boto3 botocore`. Make sure
-  you upgrade the same interpreter/virtualenv you run the script with.
-- **"Failed to initialize the AWS billing client"** — usually an unknown
-  `--profile` or missing credentials. Check your AWS configuration.
-- **`WARN: no linked account charges returned for <month>`** — the APIs returned
-  no data for that month (for example, a month with no active contract). Other
-  months in the range are still processed.
+- **"This boto3/botocore version does not support the Enterprise Support billing APIs"** — upgrade the SDK: `pip install --upgrade boto3 botocore`. Make sure you upgrade the same interpreter/virtualenv you run the script with.
+- **"Failed to initialize the AWS billing client"** — usually an unknown `--profile` or missing credentials. Check your AWS configuration.
+- **`WARN: no linked account charges returned for <month>`** — the APIs returned no data for that month (for example, a month with no active contract). Other months in the range are still processed.
+- **`AccessDeniedException` — "Caller is not a designated primary payer"** (calling `GetEnterpriseSupportChargeSummary`) — the account has not been onboarded to use the Enterprise Support billing APIs. Contact your AWS Technical Account Manager (TAM) to request onboarding.
 
 ## Security
 
